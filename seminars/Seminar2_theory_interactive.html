@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вектор Шепли и индекс Шепли–Шубика</title>
+
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+<style>
+  :root {
+    --bg: #f7f7fb;
+    --card: #ffffff;
+    --fg: #1f2328;
+    --muted: #6b7280;
+    --accent: #7c3aed;
+    --accent-soft: #f3e8ff;
+    --border: #e5e7eb;
+    --good: #16a34a;
+    --good-soft: #dcfce7;
+    --warn: #f59e0b;
+    --warn-soft: #fef3c7;
+    --danger: #dc2626;
+    --danger-soft: #fee2e2;
+    --story: #0ea5e9;
+    --story-soft: #e0f2fe;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Inter", "Helvetica Neue", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  h1 {
+    font-size: 1.9em;
+    margin: 0 0 6px;
+    letter-spacing: -0.02em;
+  }
+  .sub {
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 32px;
+  }
+
+  h2 {
+    font-size: 1.35em;
+    margin: 48px 0 14px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--accent);
+  }
+
+  h3 {
+    font-size: 1.08em;
+    margin: 24px 0 10px;
+    color: var(--accent);
+  }
+
+  h4 {
+    font-size: 0.98em;
+    margin: 18px 0 8px;
+    color: #374151;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 26px;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .lead p { margin: 0 0 14px; }
+
+  .note {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 18px;
+    margin: 14px 0;
+    font-size: 0.95em;
+  }
+
+  .story {
+    background: var(--story-soft);
+    border-left: 4px solid var(--story);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 20px;
+    margin: 16px 0;
+  }
+  .story-title {
+    font-weight: 700;
+    color: #0369a1;
+    margin-bottom: 6px;
+  }
+
+  .def {
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    background: #fff;
+  }
+  .def-title {
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-size: 0.95em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ---- Табы ---- */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 20px 0 4px;
+  }
+  .tab {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all .15s;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--accent); }
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ---- Таблицы ---- */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 0.94em;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  th, td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: #f3f4f6;
+    font-weight: 600;
+    font-size: 0.82em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #4b5563;
+  }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+
+  input[type="number"], input[type="text"] {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    background: #fafafa;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  button.action {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 12px 8px 12px 0;
+    transition: background .15s;
+  }
+  button.action:hover { background: #6d28d9; }
+  button.ghost {
+    background: #fff;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  button.ghost:hover { background: var(--accent-soft); }
+
+  /* ---- Результаты ---- */
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .result-cell {
+    background: var(--accent-soft);
+    border-radius: 10px;
+    padding: 12px 14px;
+    border-left: 4px solid var(--accent);
+  }
+  .result-cell .who {
+    font-size: 0.82em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .result-cell .val {
+    font-size: 1.25em;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .result-cell .share {
+    font-size: 0.85em;
+    color: var(--muted);
+  }
+
+  .steps { margin-top: 20px; }
+  .step {
+    border-left: 3px solid var(--accent);
+    padding: 6px 0 6px 14px;
+    margin: 12px 0;
+  }
+  .step-title {
+    font-weight: 600;
+    font-size: 0.9em;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  .step details { margin-top: 4px; }
+  .step summary {
+    cursor: pointer;
+    font-size: 0.9em;
+    color: var(--muted);
+    list-style: none;
+    user-select: none;
+  }
+  .step summary::-webkit-details-marker { display: none; }
+  .step summary::before {
+    content: "▸ ";
+    color: var(--accent);
+    display: inline-block;
+  }
+  .step details[open] summary::before { content: "▾ "; }
+
+  .check {
+    color: var(--good);
+    font-weight: 600;
+  }
+  .check::before { content: "✓ "; }
+
+  .moral {
+    background: var(--warn-soft);
+    border-left: 4px solid var(--warn);
+    border-radius: 0 10px 10px 0;
+    padding: 10px 16px;
+    margin: 14px 0;
+  }
+  .moral::before { content: "→ "; font-weight: 700; }
+
+  .paradox {
+    background: var(--danger-soft);
+    border-left: 4px solid var(--danger);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 18px;
+    margin: 14px 0;
+  }
+  .paradox-title {
+    font-weight: 700;
+    color: var(--danger);
+    margin-bottom: 4px;
+  }
+
+  .hint {
+    font-size: 0.9em;
+    color: var(--muted);
+    margin: 6px 0;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 800px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  .axioms {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .axiom {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .axiom .num {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.8em;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .axiom .human {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.88em;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  @media (max-width: 600px) {
+    .wrap { padding: 20px 14px 60px; }
+    h1 { font-size: 1.5em; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Вектор Шепли и индекс Шепли–Шубика</h1>
+  <p class="sub">Кооперативные игры, справедливое распределение, интерактивные задачи</p>
+
+  <!-- ============================================================
+       1. ЧЕЛОВЕЧЕСКОЕ ВВЕДЕНИЕ
+  ============================================================ -->
+  <h2>1. Зачем это нужно</h2>
+
+  <div class="card lead">
+    <p>Четыре партии проходят в парламент. У одной 40 мест, у другой 30, у третьей 20, у последней 10. Всего 100. Для принятия решения нужно 51. Кажется, что «сила» партии пропорциональна её местам: 40%, 30%, 20%, 10%.</p>
+    <p>Но это не так. Если партия с 20 местами может «перевесить» голосование в паре с 40-местной — её реальная сила влияния оказывается больше 20%. А партия с 10 местами может не влиять вообще ни на одно решение. То же самое происходит, когда три магазина решают заказать одну машину вместо трёх отдельных рейсов, три основателя делят прибыль стартапа или три друга делят счёт за пиццу. Везде есть участники, у каждого свой вклад, и нужно разделить общий результат так, чтобы никому не было обидно.</p>
+    <p><strong>Индекс Шепли–Шубика</strong> и его более общий предок — <strong>вектор Шепли</strong> — дают математический ответ: как измерить реальное влияние игрока и как справедливо распределить общий выигрыш или издержки. Это не субъективное «мне кажется, я вложил больше». Это строгая формула, которая в каждой задаче даёт единственный ответ.</p>
+
+    <div class="note">
+      <strong>Ключевая идея.</strong> Сила игрока — это не его «вес» (места, деньги, время), а то, как часто он оказывается <em>решающим</em>: без него коалиция не дотягивает до нужного результата, а с ним — дотягивает. Чем чаще игрок в такой позиции, тем больше его индекс влияния.
+    </div>
+  </div>
+
+  <!-- ============================================================
+       2. ФОРМАЛЬНОЕ ОПРЕДЕЛЕНИЕ
+  ============================================================ -->
+  <h2>2. Кооперативные игры и вектор Шепли</h2>
+
+  <div class="card">
+    <p>Перейдём к формальному языку.</p>
+
+    <div class="def">
+      <div class="def-title">Определение. Кооперативная игра</div>
+      <p><strong>Кооперативной игрой</strong> называется пара $(N, v)$, где $N = \{1, \dots, n\}$ — множество игроков, а $v: 2^N \to \mathbb{R}$ — характеристическая функция, задающая выигрыш каждой коалиции $S \subseteq N$. Предполагается $v(\varnothing) = 0$.</p>
+      <p>Функция $v(S)$ описывает, сколько могут заработать (или сэкономить) игроки из множества $S$, если объединятся. Игроки могут договариваться и создавать коалиции, а выигрыш $v(N)$ большой коалиции нужно разделить между всеми.</p>
+    </div>
+
+    <p>Возникает вопрос: как разделить $v(N)$ так, чтобы дележ был справедливым? Формализовать «справедливость» можно через понятие <em>маргинального вклада</em>. Если игрок $i$ присоединяется к коалиции $S$, он добавляет к её выигрышу величину</p>
+
+    $$\Delta_i(S) = v(S \cup \{i\}) - v(S).$$
+
+    <p>Но у каждого игрока таких вкладов столько же, сколько коалиций, к которым он может присоединиться. Естественная идея — усреднить их по всем возможным коалициям с подходящими весами.</p>
+
+    <div class="def">
+      <div class="def-title">Определение. Вектор Шепли</div>
+      <p><strong>Вектором Шепли</strong> игры $(N, v)$ называется вектор $\phi = (\phi_1, \dots, \phi_n)$, где</p>
+      $$\phi_i = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|!\,(n - |S| - 1)!}{n!}\,\bigl[v(S \cup \{i\}) - v(S)\bigr].$$
+      <p>Величина $v(S \cup \{i\}) - v(S)$ — маргинальный вклад игрока $i$ в коалицию $S$. Множитель $\dfrac{|S|!\,(n - |S| - 1)!}{n!}$ — вероятность того, что в случайной перестановке всех $n$ игроков игрок $i$ окажется сразу после коалиции $S$. Иначе говоря,</p>
+      $$\phi_i = \mathbb{E}\bigl[\text{вклад игрока } i \text{ при случайном порядке вступления в коалицию}\bigr].$$
+      <p>Случайный порядок — это математический приём: он гарантирует, что ни одна коалиция не получит предпочтения. Все $n!$ перестановок равновероятны.</p>
+    </div>
+
+    <p>Формула выглядит громоздко, но её смысл прост: <strong>справедливая доля игрока — это его средний вклад в коалицию, если бы игроки вступали в неё в случайном порядке</strong>.</p>
+  </div>
+
+  <!-- ============================================================
+       3. ПРИМЕР НА КЛАССИЧЕСКИЙ ВЕКТОР ШЕПЛИ
+  ============================================================ -->
+  <h2>3. Пример: три игрока и общий проект</h2>
+
+  <div class="story">
+    <div class="story-title">Задача</div>
+    Три инженера — Анна, Борис и Виктор — могут вместе работать над проектом. Если Анна и Борис объединятся, они заработают 60 млн ₽; Анна и Виктор — 50 млн; Борис и Виктор — 40 млн. Втроём они заработают 100 млн. В одиночку никто ничего не заработает. Как разделить 100 млн между ними?
+  </div>
+
+  <table>
+    <thead><tr><th>Коалиция $S$</th><th class="num">$v(S)$</th></tr></thead>
+    <tbody>
+      <tr><td>$\varnothing$</td><td class="num">0</td></tr>
+      <tr><td>{Анна}</td><td class="num">0</td></tr>
+      <tr><td>{Борис}</td><td class="num">0</td></tr>
+      <tr><td>{Виктор}</td><td class="num">0</td></tr>
+      <tr><td>{Анна, Борис}</td><td class="num">60</td></tr>
+      <tr><td>{Анна, Виктор}</td><td class="num">50</td></tr>
+      <tr><td>{Борис, Виктор}</td><td class="num">40</td></tr>
+      <tr><td>{Анна, Борис, Виктор}</td><td class="num">100</td></tr>
+    </tbody>
+  </table>
+
+  <p>Веса для $n = 3$: $|S| = 0 \to 1/3$, $|S| = 1 \to 1/6$, $|S| = 2 \to 1/3$.</p>
+
+  <h3>Расчёт для Анны</h3>
+  <table>
+    <thead><tr><th>$S$</th><th class="num">$v(S)$</th><th class="num">$v(S \cup \{\text{Анна}\})$</th><th class="num">Вклад</th><th class="num">Вес</th><th class="num">Вклад × вес</th></tr></thead>
+    <tbody>
+      <tr><td>$\varnothing$</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">1/3</td><td class="num">0</td></tr>
+      <tr><td>{Борис}</td><td class="num">0</td><td class="num">60</td><td class="num">60</td><td class="num">1/6</td><td class="num">10</td></tr>
+      <tr><td>{Виктор}</td><td class="num">0</td><td class="num">50</td><td class="num">50</td><td class="num">1/6</td><td class="num">25/3</td></tr>
+      <tr><td>{Борис, Виктор}</td><td class="num">40</td><td class="num">100</td><td class="num">60</td><td class="num">1/3</td><td class="num">20</td></tr>
+    </tbody>
+  </table>
+  $$\phi_{\text{Анна}} = 0 + 10 + \tfrac{25}{3} + 20 = \tfrac{115}{3} \approx 38.33$$
+
+  <h3>Расчёт для Бориса</h3>
+  <table>
+    <thead><tr><th>$S$</th><th class="num">$v(S)$</th><th class="num">$v(S \cup \{\text{Борис}\})$</th><th class="num">Вклад</th><th class="num">Вес</th><th class="num">Вклад × вес</th></tr></thead>
+    <tbody>
+      <tr><td>$\varnothing$</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">1/3</td><td class="num">0</td></tr>
+      <tr><td>{Анна}</td><td class="num">0</td><td class="num">60</td><td class="num">60</td><td class="num">1/6</td><td class="num">10</td></tr>
+      <tr><td>{Виктор}</td><td class="num">0</td><td class="num">40</td><td class="num">40</td><td class="num">1/6</td><td class="num">20/3</td></tr>
+      <tr><td>{Анна, Виктор}</td><td class="num">50</td><td class="num">100</td><td class="num">50</td><td class="num">1/3</td><td class="num">50/3</td></tr>
+    </tbody>
+  </table>
+  $$\phi_{\text{Борис}} = 0 + 10 + \tfrac{20}{3} + \tfrac{50}{3} = \tfrac{100}{3} \approx 33.33$$
+
+  <h3>Расчёт для Виктора</h3>
+  <table>
+    <thead><tr><th>$S$</th><th class="num">$v(S)$</th><th class="num">$v(S \cup \{\text{Виктор}\})$</th><th class="num">Вклад</th><th class="num">Вес</th><th class="num">Вклад × вес</th></tr></thead>
+    <tbody>
+      <tr><td>$\varnothing$</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">1/3</td><td class="num">0</td></tr>
+      <tr><td>{Анна}</td><td class="num">0</td><td class="num">50</td><td class="num">50</td><td class="num">1/6</td><td class="num">25/3</td></tr>
+      <tr><td>{Борис}</td><td class="num">0</td><td class="num">40</td><td class="num">40</td><td class="num">1/6</td><td class="num">20/3</td></tr>
+      <tr><td>{Анна, Борис}</td><td class="num">60</td><td class="num">100</td><td class="num">40</td><td class="num">1/3</td><td class="num">40/3</td></tr>
+    </tbody>
+  </table>
+  $$\phi_{\text{Виктор}} = 0 + \tfrac{25}{3} + \tfrac{20}{3} + \tfrac{40}{3} = \tfrac{85}{3} \approx 28.33$$
+
+  <div class="check" style="display:block; margin-top:8px">$\phi_{\text{Анна}} + \phi_{\text{Борис}} + \phi_{\text{Виктор}} = \tfrac{115 + 100 + 85}{3} = 100 = v(N)$</div>
+
+  <div class="moral">Анна получает больше всех, Виктор — меньше. Это не произвол: Анна вносит наибольший вклад в любую коалицию, куда входит. Средний вклад и определяет долю.</div>
+  </div>
+
+  <!-- ============================================================
+       4. ЕДИНСТВЕННОСТЬ
+  ============================================================ -->
+  <h2>4. Почему решение единственное</h2>
+
+  <div class="card">
+    <p>Вектор Шепли — не один из возможных способов дележа, а <strong>единственный</strong>, удовлетворяющий четырём аксиомам.</p>
+
+    <div class="axioms">
+      <div class="axiom">
+        <span class="num">1</span><strong>Эффективность.</strong>
+        $\sum_{i \in N} \phi_i = v(N)$.
+        <span class="human">Весь выигрыш большой коалиции распределён. Ничего не теряется и не создаётся из воздуха.</span>
+      </div>
+      <div class="axiom">
+        <span class="num">2</span><strong>Симметрия.</strong>
+        Если $v(S \cup \{i\}) = v(S \cup \{j\})$ для всех $S \subseteq N \setminus \{i, j\}$, то $\phi_i = \phi_j$.
+        <span class="human">Игроки с одинаковым вкладом получают поровну. Имена не важны.</span>
+      </div>
+      <div class="axiom">
+        <span class="num">3</span><strong>Болван.</strong>
+        Если $v(S \cup \{i\}) = v(S)$ для всех $S$, то $\phi_i = 0$.
+        <span class="human">Кто ничего не добавляет ни одной коалиции, тот ничего не получает.</span>
+      </div>
+      <div class="axiom">
+        <span class="num">4</span><strong>Аддитивность.</strong>
+        Если $v = v' + v''$ на том же множестве игроков, то $\phi_i(v) = \phi_i(v') + \phi_i(v'')$.
+        <span class="human">При объединении двух независимых игр вклады складываются.</span>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Теорема Шепли.</strong> Существует ровно одна функция, сопоставляющая каждой кооперативной игре $(N, v)$ вектор долей и удовлетворяющая аксиомам 1–4. Эта функция задаётся формулой вектора Шепли.
+    </div>
+
+    <p>Любой другой дележ нарушает хотя бы одну аксиому. «Поровну» нарушает аксиому болвана: игрок, который ничего не приносит, всё равно получает долю. «Пропорционально индивидуальному вкладу» нарушает симметрию, если вклады в разные коалиции не одинаковы. «Всё лидеру» нарушает эффективность в смысле согласованности с коалиционной структурой.</p>
+  </div>
+
+  <!-- ============================================================
+       5. ИНДЕКС ШЕПЛИ-ШУБИКА И ПАРАДОКСЫ
+  ============================================================ -->
+  <h2>5. Индекс Шепли–Шубика и парадоксы</h2>
+
+  <div class="card">
+    <div class="def">
+      <div class="def-title">Определение. Индекс Шепли–Шубика</div>
+      <p>Пусть $N$ — множество игроков с весами $w_i > 0$ и задан кворум $q$. Игра голосования задаётся характеристической функцией</p>
+      $$v(S) = \begin{cases} 1, & \sum_{i \in S} w_i \ge q, \\ 0, & \text{иначе.} \end{cases}$$
+      <p><strong>Индекс Шепли–Шубика</strong> — это вектор Шепли этой игры. Компонента $\phi_i$ — доля коалиций $S \not\ni i$, для которых игрок $i$ решающий: $\sum_{j \in S} w_j < q$, но $\sum_{j \in S} w_j + w_i \ge q$.</p>
+    </div>
+
+    <p>Ниже — три ситуации, где интуиция о «пропорциональности веса и влияния» ломается. Это классические парадоксы теории голосования, и они встречаются не только в парламентах.</p>
+
+    <!-- Парадокс 1 -->
+    <div class="paradox">
+      <div class="paradox-title">Парадокс 1. Меньший вес — больше влияния</div>
+      <p>Четыре партии: $w_A = 49$, $w_B = 48$, $w_C = 2$, $w_D = 1$, кворум $q = 51$.</p>
+      <p>Выигрышные коалиции и решающие игроки:</p>
+      <table>
+        <thead><tr><th>Коалиция</th><th class="num">Сумма</th><th>Решающие</th></tr></thead>
+        <tbody>
+          <tr><td>A + C</td><td class="num">51</td><td>A, C</td></tr>
+          <tr><td>B + C + D</td><td class="num">51</td><td>B, C, D</td></tr>
+          <tr><td>A + B</td><td class="num">97</td><td>нет решающих</td></tr>
+          <tr><td>A + B + C</td><td class="num">99</td><td>нет решающих</td></tr>
+          <tr><td>A + C + D</td><td class="num">52</td><td>C (без C: 50 &lt; 51)</td></tr>
+          <tr><td>B + C</td><td class="num">50</td><td>проигрыш</td></tr>
+          <tr><td>A + D</td><td class="num">50</td><td>проигрыш</td></tr>
+        </tbody>
+      </table>
+      <p>Партия C с 2 местами оказывается решающей в трёх коалициях: {A, C}, {B, C, D}, {A, C, D}. Партия B с 48 местами — только в одной: {B, C, D}.</p>
+      <p><strong>Вывод.</strong> Индекс Шепли–Шубика у C может быть выше, чем у B. Влияние определяется не весом, а частотой попадания в решающую позицию.</p>
+    </div>
+
+    <!-- Парадокс 2 (исправленный) -->
+    <div class="paradox">
+      <div class="paradox-title">Парадокс 2. Болван в наивных дележах получает долю</div>
+      <p>Три игрока. Характеристическая функция:</p>
+      <table>
+        <thead><tr><th>Коалиция</th><th class="num">$v(S)$</th></tr></thead>
+        <tbody>
+          <tr><td>{1}</td><td class="num">0</td></tr>
+          <tr><td>{2}</td><td class="num">0</td></tr>
+          <tr><td>{3}</td><td class="num">0</td></tr>
+          <tr><td>{1, 2}</td><td class="num">100</td></tr>
+          <tr><td>{1, 3}</td><td class="num">0</td></tr>
+          <tr><td>{2, 3}</td><td class="num">0</td></tr>
+          <tr><td>{1, 2, 3}</td><td class="num">100</td></tr>
+        </tbody>
+      </table>
+      <p>Проверим игрока 3. Для всех коалиций без него:</p>
+      <table>
+        <thead><tr><th>$S$</th><th class="num">$v(S)$</th><th class="num">$v(S \cup \{3\})$</th><th>Совпадают?</th></tr></thead>
+        <tbody>
+          <tr><td>$\varnothing$</td><td class="num">0</td><td class="num">0</td><td>да</td></tr>
+          <tr><td>{1}</td><td class="num">0</td><td class="num">0</td><td>да</td></tr>
+          <tr><td>{2}</td><td class="num">0</td><td class="num">0</td><td>да</td></tr>
+          <tr><td>{1, 2}</td><td class="num">100</td><td class="num">100</td><td>да</td></tr>
+        </tbody>
+      </table>
+      <p>Игрок 3 — <strong>болван</strong>: его присоединение не меняет выигрыш ни одной коалиции. По аксиоме болвана $\phi_3 = 0$. И действительно, вектор Шепли даёт $\phi = (50, 50, 0)$.</p>
+      <p>Но «наивные» правила дележа ведут себя иначе:</p>
+      <ul style="font-size:0.95em">
+        <li><strong>Поровну:</strong> каждому по $100/3 \approx 33.3$ — игрок 3 получает долю, хотя ничего не принёс.</li>
+        <li><strong>Пропорционально числу вхождений в выигрышные коалиции:</strong> игрок 3 входит в {1, 2, 3} — получает ненулевую долю.</li>
+        <li><strong>По размеру индивидуального вклада:</strong> формально ноль, но на практике такие схемы часто дают «компенсацию за участие».</li>
+      </ul>
+      <p><strong>Вывод.</strong> Вектор Шепли — единственное правило дележа, которое не даёт болвану ничего. Любое интуитивное правило ему что-то даёт, и именно в этом его несправедливость.</p>
+    </div>
+
+    <!-- Парадокс 3 -->
+    <div class="paradox">
+      <div class="paradox-title">Парадокс 3. Сдвиг кворума меняет всё</div>
+      <p>Партии: $w_A = 4$, $w_B = 3$, $w_C = 2$, $w_D = 1$. Рассмотрим два кворума: $q = 6$ и $q = 7$.</p>
+
+      <div class="two-col">
+        <div>
+          <h4>$q = 6$</h4>
+          <p class="hint">Решающие позиции:</p>
+          <ul style="font-size:0.9em; margin:0; padding-left:18px">
+            <li>A решающий в {A, B}, {A, C}</li>
+            <li>B решающий в {A, B}, {B, C, D}</li>
+            <li>C решающий в {A, C}, {B, C, D}</li>
+            <li>D решающий в {B, C, D}</li>
+          </ul>
+          <p class="hint" style="margin-top:6px">A и B влиятельнее C и D.</p>
+        </div>
+        <div>
+          <h4>$q = 7$</h4>
+          <p class="hint">Решающие позиции:</p>
+          <ul style="font-size:0.9em; margin:0; padding-left:18px">
+            <li>Ни одна пара не набирает 7</li>
+            <li>Нужны тройки: {A, B, C}, {A, B, D}, {A, C, D}, {B, C, D}</li>
+            <li>В {A, B, D}: решающие A, B</li>
+            <li>В {A, C, D}: решающие A, C, D</li>
+          </ul>
+          <p class="hint" style="margin-top:6px">Индексы перераспределяются.</p>
+        </div>
+      </div>
+
+      <p><strong>Вывод.</strong> Индекс Шепли–Шубика — свойство правил игры (веса + кворум), а не партии. Один и тот же расклад при разных кворумах даёт разные индексы влияния.</p>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       6. ИНТЕРАКТИВНЫЕ ЗАДАЧИ
+  ============================================================ -->
+  <h2>6. Интерактивные задачи</h2>
+
+  <p class="hint" style="margin-bottom:16px">Каждая задача — со своей историей. Меняйте числа, нажимайте кнопку, смотрите, как пересчитывается вектор Шепли.</p>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-panel="parliament">Парламент</button>
+    <button class="tab" data-panel="eu">Совет ЕС</button>
+  </div>
+
+  <!-- ====== ПАРЛАМЕНТ ====== -->
+  <div class="panel active" id="panel-parliament">
+    <div class="card">
+      <h3>Парламент: индекс Шепли–Шубика</h3>
+
+      <div class="story">
+        <div class="story-title">Сюжет</div>
+        В парламенте три партии: «Север» (40 мест), «Центр» (30 мест) и «Юг» (20 мест), а также независимый депутат от «Окраин» (10 мест). Всего 100 мест. Для принятия закона нужно 51. Партии договариваются о коалициях, и каждая хочет понять, насколько велико её реальное влияние на голосование. Обычно считают, что «Север» вдвое влиятельнее «Юга» — но так ли это?
+      </div>
+
+      <p class="hint">Введите число мест каждой партии и кворум. Получите индекс влияния по Шепли–Шубика.</p>
+
+      <table id="parl-table">
+        <thead><tr><th>Партия</th><th class="num">Мест</th></tr></thead>
+        <tbody>
+          <tr><td>«Север»</td><td><input type="number" value="40" min="0"></td></tr>
+          <tr><td>«Центр»</td><td><input type="number" value="30" min="0"></td></tr>
+          <tr><td>«Юг»</td><td><input type="number" value="20" min="0"></td></tr>
+          <tr><td>«Окраины»</td><td><input type="number" value="10" min="0"></td></tr>
+        </tbody>
+      </table>
+
+      <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+        <span>Кворум $q$ (нужно строго больше):</span>
+        <input type="number" id="parl-threshold" value="50" style="width:90px">
+      </label>
+
+      <div>
+        <button class="action" onclick="solveParliament()">Рассчитать</button>
+        <button class="action ghost" onclick="loadParlPreset()">Сбросить</button>
+      </div>
+
+      <div id="parl-output"></div>
+    </div>
+  </div>
+
+  <!-- ====== СОВЕТ ЕС ====== -->
+  <div class="panel" id="panel-eu">
+    <div class="card">
+      <h3>Совет ЕС: индекс Шепли–Шубика на реальных данных</h3>
+
+      <div class="story">
+        <div class="story-title">Сюжет</div>
+        В Совете Европейского союза каждая страна имеет своё число голосов. Германия, Франция и Италия — по 29, Испания и Польша — по 27, Румыния — 14, Нидерланды — 13, Бельгия, Греция и Чехия — по 12, Швеция и Португалия — по 10. Решения принимаются квалифицированным большинством. Возникает вопрос: действительно ли «сила» страны пропорциональна её числу голосов? Оказывается, нет — и это предмет серьёзных политических дискуссий.
+      </div>
+
+      <p class="hint">Меняйте число голосов и кворум. Сравните наивную долю голосов и индекс Шепли–Шубика.</p>
+
+      <table id="eu-table">
+        <thead><tr><th>Страна</th><th class="num">Голосов</th></tr></thead>
+        <tbody>
+          <tr><td>Германия</td><td><input type="number" value="29"></td></tr>
+          <tr><td>Франция</td><td><input type="number" value="29"></td></tr>
+          <tr><td>Италия</td><td><input type="number" value="29"></td></tr>
+          <tr><td>Испания</td><td><input type="number" value="27"></td></tr>
+          <tr><td>Польша</td><td><input type="number" value="27"></td></tr>
+          <tr><td>Румыния</td><td><input type="number" value="14"></td></tr>
+          <tr><td>Нидерланды</td><td><input type="number" value="13"></td></tr>
+          <tr><td>Бельгия</td><td><input type="number" value="12"></td></tr>
+          <tr><td>Греция</td><td><input type="number" value="12"></td></tr>
+          <tr><td>Чехия</td><td><input type="number" value="12"></td></tr>
+          <tr><td>Швеция</td><td><input type="number" value="10"></td></tr>
+          <tr><td>Португалия</td><td><input type="number" value="10"></td></tr>
+        </tbody>
+      </table>
+
+      <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+        <span>Кворум $q$:</span>
+        <input type="number" id="eu-threshold" value="175" style="width:100px">
+      </label>
+
+      <p class="hint">Перебор $2^{12}$ коалиций может занять пару секунд.</p>
+
+      <button class="action" onclick="solveEU()">Рассчитать</button>
+      <button class="action ghost" onclick="location.reload()">Сбросить</button>
+
+      <div id="eu-output"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   Утилиты
+============================================================ */
+function fact(k) { let r = 1; for (let i = 2; i <= k; i++) r *= i; return r; }
+function popcount(x) { let c = 0; while (x) { c += x & 1; x >>= 1; } return c; }
+function maskToArray(mask, n) {
+  const s = [];
+  for (let i = 0; i < n; i++) if (mask & (1 << i)) s.push(i);
+  return s;
+}
+function setLabel(members, names) {
+  if (members.length === 0) return "∅";
+  return "{" + members.map(i => names[i]).join(", ") + "}";
+}
+function fmt(x, digits = 2) {
+  if (Math.abs(x - Math.round(x)) < 1e-9) return String(Math.round(x));
+  return x.toFixed(digits);
+}
+
+/* ============================================================
+   Движок: вектор Шепли
+============================================================ */
+function shapleyFromV(n, v, names) {
+  const factN = fact(n);
+  const phi = new Array(n).fill(0);
+  const contributions = [];
+
+  for (let i = 0; i < n; i++) {
+    contributions[i] = [];
+    for (let mask = 0; mask < (1 << n); mask++) {
+      if (mask & (1 << i)) continue;
+      const sizeS = popcount(mask);
+      const weight = fact(sizeS) * fact(n - sizeS - 1) / factN;
+      const vS = v[mask];
+      const vSi = v[mask | (1 << i)];
+      const contribution = vSi - vS;
+      phi[i] += weight * contribution;
+      contributions[i].push({
+        members: maskToArray(mask, n),
+        vS, vSi, contribution, weight
+      });
+    }
+  }
+  return { phi, contributions };
+}
+
+/* ============================================================
+   Рендер
+============================================================ */
+function renderResult(targetId, names, phi, extra = {}) {
+  const total = phi.reduce((a, b) => a + b, 0);
+  let html = `<h3>Результат</h3><div class="result-grid">`;
+  names.forEach((name, i) => {
+    const share = total > 0 ? (phi[i] / total * 100).toFixed(1) : "0.0";
+    html += `
+      <div class="result-cell">
+        <div class="who">${name}</div>
+        <div class="val">${fmt(phi[i])}</div>
+        <div class="share">${share}%</div>
+      </div>`;
+  });
+  html += `</div>`;
+  html += `<div class="check" style="display:block; margin:8px 0 0">Сумма = ${fmt(total)}</div>`;
+  if (extra.moral) html += `<div class="moral">${extra.moral}</div>`;
+  document.getElementById(targetId).innerHTML = html;
+}
+
+function renderSteps(targetId, names, contributions) {
+  let html = `<div class="steps"><h3>Пошаговый расчёт</h3>`;
+  names.forEach((name, i) => {
+    html += `
+      <div class="step">
+        <div class="step-title">${name}</div>
+        <details>
+          <summary>${contributions[i].length} коалиций</summary>
+          <table>
+            <thead>
+              <tr>
+                <th>Коалиция без ${name}</th>
+                <th class="num">$v(S)$</th>
+                <th class="num">$v(S\\cup\\{${name}\\})$</th>
+                <th class="num">Вклад</th>
+                <th class="num">Вес</th>
+                <th class="num">Вклад × вес</th>
+              </tr>
+            </thead>
+            <tbody>`;
+    contributions[i].forEach(c => {
+      const w = c.weight;
+      html += `<tr>
+        <td>${setLabel(c.members, names)}</td>
+        <td class="num">${fmt(c.vS)}</td>
+        <td class="num">${fmt(c.vSi)}</td>
+        <td class="num">${fmt(c.contribution)}</td>
+        <td class="num">${w === 0 ? "0" : (w < 0.01 ? w.toFixed(4) : fmt(w, 3))}</td>
+        <td class="num">${fmt(c.contribution * w)}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></details></div>`;
+  });
+  html += `</div>`;
+  document.getElementById(targetId).innerHTML += html;
+}
+
+/* ============================================================
+   1. ПАРЛАМЕНТ
+============================================================ */
+function solveParliament() {
+  const rows = document.querySelectorAll('#parl-table tbody tr');
+  const seats = [], names = [];
+  rows.forEach(tr => {
+    seats.push(parseFloat(tr.querySelector('input').value) || 0);
+    names.push(tr.children[0].textContent.trim());
+  });
+  const threshold = parseFloat(document.getElementById('parl-threshold').value);
+
+  const n = seats.length;
+  const v = new Array(1 << n).fill(0);
+  for (let mask = 0; mask < (1 << n); mask++) {
+    let sum = 0;
+    for (let i = 0; i < n; i++) if (mask & (1 << i)) sum += seats[i];
+    v[mask] = sum > threshold ? 1 : 0;
+  }
+
+  const { phi, contributions } = shapleyFromV(n, v, names);
+  const out = document.getElementById('parl-output');
+  out.innerHTML = '';
+  renderResult('parl-output', names, phi, {
+    moral: 'Индекс влияния не обязан быть пропорционален числу мест. Партия с меньшим весом может оказаться решающей чаще.'
+  });
+  renderSteps('parl-output', names, contributions);
+}
+
+function loadParlPreset() {
+  const rows = document.querySelectorAll('#parl-table tbody tr');
+  const vals = [40, 30, 20, 10];
+  rows.forEach((tr, i) => tr.querySelector('input').value = vals[i]);
+  document.getElementById('parl-threshold').value = 50;
+  document.getElementById('parl-output').innerHTML = '';
+}
+
+/* ============================================================
+   5. СОВЕТ ЕС
+============================================================ */
+function solveEU() {
+  const rows = document.querySelectorAll('#eu-table tbody tr');
+  const votes = [], names = [];
+  rows.forEach(tr => {
+    votes.push(parseFloat(tr.querySelector('input').value) || 0);
+    names.push(tr.children[0].textContent.trim());
+  });
+  const threshold = parseFloat(document.getElementById('eu-threshold').value);
+
+  const n = votes.length;
+  const v = new Array(1 << n).fill(0);
+  for (let mask = 0; mask < (1 << n); mask++) {
+    let sum = 0;
+    for (let i = 0; i < n; i++) if (mask & (1 << i)) sum += votes[i];
+    v[mask] = sum > threshold ? 1 : 0;
+  }
+
+  const { phi, contributions } = shapleyFromV(n, v, names);
+  const out = document.getElementById('eu-output');
+  out.innerHTML = '';
+
+  const totalVotes = votes.reduce((a,b)=>a+b,0);
+  const totalPhi = phi.reduce((a,b)=>a+b,0);
+
+  let html = `<h3>Результат</h3>
+    <table>
+      <thead><tr><th>Страна</th><th class="num">Голосов</th><th class="num">% голосов</th>
+        <th class="num">Индекс Шепли–Шубика</th><th class="num">Влияние, %</th>
+        <th class="num">Отклонение</th></tr></thead>
+      <tbody>`;
+  const sorted = names.map((name, i) => ({ name, i, vote: votes[i], phi: phi[i] }))
+                      .sort((a,b) => b.phi - a.phi);
+  sorted.forEach(({name, vote, phi: p}) => {
+    const voteShare = vote / totalVotes * 100;
+    const phiShare = p / totalPhi * 100;
+    const delta = phiShare - voteShare;
+    const arrow = delta > 0.5 ? "▲" : (delta < -0.5 ? "▼" : "≈");
+    const color = delta > 0.5 ? "var(--good)" : (delta < -0.5 ? "var(--danger)" : "var(--muted)");
+    html += `<tr>
+      <td>${name}</td>
+      <td class="num">${vote}</td>
+      <td class="num">${voteShare.toFixed(1)}%</td>
+      <td class="num">${(p*100).toFixed(2)}%</td>
+      <td class="num">${phiShare.toFixed(1)}%</td>
+      <td class="num" style="color:${color}; font-weight:600">${arrow} ${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  html += `<div class="check" style="display:block; margin-top:8px">Сумма индексов = ${(totalPhi*100).toFixed(2)}%</div>`;
+  html += `<div class="moral">Стрелка ▲ значит «влиятельнее, чем по голосам», ▼ — «слабее». Реальная сила страны в Совете может существенно отличаться от её доли голосов.</div>`;
+  out.innerHTML = html;
+
+  const btn = document.createElement('button');
+  btn.className = 'action ghost';
+  btn.textContent = 'Показать все коалиции';
+  btn.onclick = () => {
+    renderSteps('eu-output', names, contributions);
+    btn.remove();
+  };
+  out.appendChild(btn);
+}
+
+/* ============================================================
+   6. СВОЯ ИГРА
+============================================================ */
+function solveCustom() {
+  const rows = document.querySelectorAll('#custom-rows tr');
+  const names = ["Игрок 1", "Игрок 2", "Игрок 3"];
+  const n = 3;
+  const val = {};
+  rows.forEach(tr => {
+    val[tr.children[0].textContent.trim()] = parseFloat(tr.querySelector('input').value) || 0;
+  });
+
+  const joint = {
+    0b001: val['Игрок 1'], 0b010: val['Игрок 2'], 0b100: val['Игрок 3'],
+    0b011: val['1 + 2'], 0b101: val['1 + 3'], 0b110: val['2 + 3'],
+    0b111: val['Все трое']
+  };
+
+  const v = new Array(1 << n).fill(0);
+  for (let mask = 0; mask < (1 << n); mask++) v[mask] = joint[mask];
+
+  const { phi, contributions } = shapleyFromV(n, v, names);
+  const out = document.getElementById('custom-output');
+  out.innerHTML = '';
+  renderResult('custom-output', names, phi, {
+    moral: 'Вектор Шепли — единственный дележ, удовлетворяющий аксиомам эффективности, симметрии, болвана и аддитивности.'
+  });
+  renderSteps('custom-output', names, contributions);
+}
+
+/* ============================================================
+   Табы
+============================================================ */
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.tab');
+  if (!btn) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+});
+
+window.addEventListener('load', () => solveParliament());
+</script>
+</body>
+</html>
